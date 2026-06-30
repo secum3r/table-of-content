@@ -10,7 +10,7 @@ export default class TocGeneratorPlugin extends Plugin {
 
 		this.addCommand({
 			id: 'insert-toc',
-			name: 'Insert table of contents',
+			name: 'Insert at top of note',
 			editorCallback: (editor: Editor, _ctx: MarkdownView | MarkdownFileInfo) => {
 				const content = editor.getValue();
 				const updated = insertOrUpdateToc(content, this.settings.tocMaxDepth);

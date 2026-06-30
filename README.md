@@ -1,4 +1,4 @@
-# Table of Contents Generator
+# Table of Content
 
 An [Obsidian](https://obsidian.md) plugin that inserts a clickable table of contents at the top of the current note, built from its headings.
 
@@ -13,13 +13,13 @@ An [Obsidian](https://obsidian.md) plugin that inserts a clickable table of cont
 ## How to use
 
 1. Open the note you want a table of contents for.
-2. Open the Command Palette (`Ctrl/Cmd + P`) and run **Insert table of contents**.
+2. Open the Command Palette (`Ctrl/Cmd + P`) and run **Insert at top of note**.
 3. A table of contents is inserted at the top of the note, between `<!-- toc -->` and `<!-- /toc -->` markers. Click any entry to jump to that heading.
 4. To refresh the table of contents after editing headings, just run the command again — it replaces the existing TOC block rather than adding a new one.
 
 ### Configuring the maximum depth
 
-Go to **Settings → Table of Contents Generator** and adjust the **Maximum heading depth** slider (1–6). For example, setting it to `2` will only include `H1` and `H2` headings in the generated table of contents.
+Go to **Settings → Table of Content** and adjust the **Maximum heading depth** slider (1–6). For example, setting it to `2` will only include `H1` and `H2` headings in the generated table of contents.
 
 ## Installation
 
@@ -28,10 +28,10 @@ Go to **Settings → Table of Contents Generator** and adjust the **Maximum head
 Copy `main.js`, `manifest.json`, and `styles.css` (if present) into:
 
 ```
-<YourVault>/.obsidian/plugins/toc-generator/
+<YourVault>/.obsidian/plugins/table-of-content/
 ```
 
-Then reload Obsidian and enable **Table of Contents Generator** under **Settings → Community plugins**.
+Then reload Obsidian and enable **Table of Content** under **Settings → Community plugins**.
 
 ### Building from source
 

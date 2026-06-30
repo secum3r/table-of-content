@@ -1,6 +1,6 @@
 {
-	"id": "toc-generator",
-	"name": "Table of Contents Generator",
+	"id": "table-of-content",
+	"name": "Table of Content",
 	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
 	"description": "Inserts a clickable table of contents at the top of the note, with a configurable maximum heading depth.",

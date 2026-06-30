@@ -1,5 +1,5 @@
 {
-	"name": "toc-generator",
+	"name": "table-of-content",
 	"version": "1.0.0",
 	"description": "Inserts a clickable table of contents at the top of the note, with a configurable maximum heading depth.",
 	"main": "main.js",
