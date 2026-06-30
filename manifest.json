@@ -1,11 +1,10 @@
 {
-	"id": "sample-plugin",
-	"name": "Sample Plugin",
+	"id": "toc-generator",
+	"name": "Table of Contents Generator",
 	"version": "1.0.0",
 	"minAppVersion": "1.0.0",
-	"description": "Demonstrates some of the capabilities of the Obsidian API.",
-	"author": "Obsidian",
-	"authorUrl": "https://obsidian.md",
-	"fundingUrl": "https://obsidian.md/pricing",
+	"description": "Inserts a clickable table of contents at the top of the note, with a configurable maximum heading depth.",
+	"author": "secum3r",
+	"authorUrl": "https://github.com/secum3r",
 	"isDesktopOnly": false
 }

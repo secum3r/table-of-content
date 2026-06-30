@@ -1,18 +1,18 @@
 import { App, PluginSettingTab, Setting } from 'obsidian';
-import MyPlugin from './main';
+import TocGeneratorPlugin from './main';
 
-export interface MyPluginSettings {
-	mySetting: string;
+export interface TocGeneratorPluginSettings {
+	tocMaxDepth: number;
 }
 
-export const DEFAULT_SETTINGS: MyPluginSettings = {
-	mySetting: 'default',
+export const DEFAULT_SETTINGS: TocGeneratorPluginSettings = {
+	tocMaxDepth: 3,
 };
 
-export class SampleSettingTab extends PluginSettingTab {
-	plugin: MyPlugin;
+export class TocSettingTab extends PluginSettingTab {
+	plugin: TocGeneratorPlugin;
 
-	constructor(app: App, plugin: MyPlugin) {
+	constructor(app: App, plugin: TocGeneratorPlugin) {
 		super(app, plugin);
 		this.plugin = plugin;
 	}
@@ -23,14 +23,15 @@ export class SampleSettingTab extends PluginSettingTab {
 		containerEl.empty();
 
 		new Setting(containerEl)
-			.setName('Settings #1')
-			.setDesc("It's a secret")
-			.addText((text) =>
-				text
-					.setPlaceholder('Enter your secret')
-					.setValue(this.plugin.settings.mySetting)
+			.setName('Maximum heading depth')
+			.setDesc('Only headings at or above this level are included in the table of contents (1 = h1 only, 6 = h1–h6).')
+			.addSlider((slider) =>
+				slider
+					.setLimits(1, 6, 1)
+					.setValue(this.plugin.settings.tocMaxDepth)
+					.setDynamicTooltip()
 					.onChange(async (value) => {
-						this.plugin.settings.mySetting = value;
+						this.plugin.settings.tocMaxDepth = value;
 						await this.plugin.saveSettings();
 					}),
 			);
