@@ -29,7 +29,6 @@ export class TocSettingTab extends PluginSettingTab {
 				slider
 					.setLimits(1, 6, 1)
 					.setValue(this.plugin.settings.tocMaxDepth)
-					.setDynamicTooltip()
 					.onChange(async (value) => {
 						this.plugin.settings.tocMaxDepth = value;
 						await this.plugin.saveSettings();
