@@ -41,13 +41,19 @@ export function extractHeadings(content: string, maxDepth: number): Heading[] {
 	return headings;
 }
 
-export function buildToc(headings: Heading[]): string {
+export type SortOrder = 'original' | 'alphabetical';
+
+export function buildToc(headings: Heading[], sortOrder: SortOrder = 'original'): string {
 	if (headings.length === 0) {
 		return `${TOC_START}\n${TOC_END}`;
 	}
 
-	const minLevel = Math.min(...headings.map((h) => h.level));
-	const lines = headings.map((h) => {
+	const sorted = sortOrder === 'alphabetical'
+		? [...headings].sort((a, b) => a.text.localeCompare(b.text))
+		: headings;
+
+	const minLevel = Math.min(...sorted.map((h) => h.level));
+	const lines = sorted.map((h) => {
 		const indent = '\t'.repeat(h.level - minLevel);
 		return `${indent}- [[#${h.text}|${h.text}]]`;
 	});
@@ -60,7 +66,7 @@ export function buildToc(headings: Heading[]): string {
  * (delimited by TOC_START/TOC_END markers), it is replaced in place; otherwise
  * the new TOC is inserted at the very top of the note.
  */
-export function insertOrUpdateToc(content: string, maxDepth: number): string {
+export function insertOrUpdateToc(content: string, maxDepth: number, sortOrder: SortOrder = 'original'): string {
 	// Headings are extracted from content with any existing TOC block removed,
 	// so the TOC never includes its own entries.
 	const withoutExisting = content.replace(
@@ -69,7 +75,7 @@ export function insertOrUpdateToc(content: string, maxDepth: number): string {
 	);
 
 	const headings = extractHeadings(withoutExisting, maxDepth);
-	const toc = buildToc(headings);
+	const toc = buildToc(headings, sortOrder);
 
 	const tocBlockPattern = new RegExp(`${TOC_START}[\\s\\S]*?${TOC_END}`, 'm');
 	if (tocBlockPattern.test(content)) {

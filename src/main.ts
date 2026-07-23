@@ -13,7 +13,7 @@ export default class TocGeneratorPlugin extends Plugin {
 			name: 'Insert at top of note',
 			editorCallback: (editor: Editor, _ctx: MarkdownView | MarkdownFileInfo) => {
 				const content = editor.getValue();
-				const updated = insertOrUpdateToc(content, this.settings.tocMaxDepth);
+				const updated = insertOrUpdateToc(content, this.settings.tocMaxDepth, this.settings.tocSortOrder);
 				if (updated !== content) {
 					editor.setValue(updated);
 				}
