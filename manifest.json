@@ -1,10 +1,13 @@
 {
 	"id": "table-of-content",
 	"name": "Table of Content",
-	"version": "1.0.3",
+	"version": "1.0.4",
 	"minAppVersion": "1.0.0",
 	"description": "Inserts a clickable table of contents at the top of the note, with a configurable maximum heading depth.",
 	"author": "secum3r",
 	"authorUrl": "https://github.com/secum3r",
+	"fundingUrl": {
+		"Ko-fi": "https://ko-fi.com/secum3r"
+	},
 	"isDesktopOnly": false
 }

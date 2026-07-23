@@ -2,6 +2,8 @@
 
 An [Obsidian](https://obsidian.md) plugin that inserts a clickable table of contents at the top of the current note, built from its headings.
 
+[![ko-fi](https://ko-fi.com/img/githubbutton_sm.svg)](https://ko-fi.com/secum3r)
+
 ## Features
 
 - Scans the active note for headings (`#` through `######`).
