@@ -1,7 +1,6 @@
 import { App, Notice, TFile, TFolder } from 'obsidian';
 import { applyTocBlock, TOC_END, TOC_START } from './toc';
 
-const INDEX_FILE = '_index.md';
 const MAIN_INDEX_FILE = '_Main-Index.md';
 
 type VaultFolderNode = { folder: TFolder; children: VaultFolderNode[] };
@@ -21,22 +20,14 @@ function scanVaultFolders(folder: TFolder, maxDepth: number, currentDepth: numbe
 	return nodes;
 }
 
-function renderVaultNodes(app: App, nodes: VaultFolderNode[], indent: number): string[] {
+function renderVaultNodes(nodes: VaultFolderNode[], indent: number): string[] {
 	const lines: string[] = [];
 	const prefix = '\t'.repeat(indent);
 
 	for (const { folder, children } of nodes) {
-		const indexPath = `${folder.path}/${INDEX_FILE}`;
-		const hasIndex = app.vault.getAbstractFileByPath(indexPath) instanceof TFile;
-		const linkPath = indexPath.replace(/\.md$/, '');
-
-		if (hasIndex) {
-			lines.push(`${prefix}- [[${linkPath}|${folder.name}]]`);
-		} else {
-			lines.push(`${prefix}- ${folder.name}`);
-		}
-
-		lines.push(...renderVaultNodes(app, children, indent + 1));
+		const linkPath = `${folder.path}/_index`;
+		lines.push(`${prefix}- [[${linkPath}|${folder.name}]]`);
+		lines.push(...renderVaultNodes(children, indent + 1));
 	}
 
 	return lines;
@@ -50,7 +41,7 @@ function buildVaultTocBlock(app: App, maxDepth: number): string {
 		return `${TOC_START}\n${TOC_END}`;
 	}
 
-	const lines = renderVaultNodes(app, nodes, 0);
+	const lines = renderVaultNodes(nodes, 0);
 	return `${TOC_START}\n${lines.join('\n')}\n${TOC_END}`;
 }
 
