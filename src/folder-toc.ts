@@ -56,16 +56,34 @@ function buildFolderTocBlock(folder: TFolder, maxDepth: number): string {
 	return `${TOC_START}\n${lines.join('\n')}\n${TOC_END}`;
 }
 
-export async function insertFolderToc(app: App, maxDepth: number): Promise<void> {
-	const activeFile = app.workspace.getActiveFile();
-	if (!activeFile) {
-		new Notice('Open a Markdown note first.');
-		return;
+/** Returns the target folder: the folder selected in the file explorer, or
+ *  the parent folder of the currently open note as a fallback. */
+function resolveTargetFolder(app: App): TFolder | null {
+	// Check if a folder is highlighted in the file explorer
+	const explorerLeaf = app.workspace.getLeavesOfType('file-explorer')[0];
+	if (explorerLeaf) {
+		const view = explorerLeaf.view as unknown as Record<string, unknown>;
+		const fileItems = view['fileItems'] as Record<string, Record<string, unknown>> | undefined;
+		if (fileItems) {
+			for (const [path, item] of Object.entries(fileItems)) {
+				const el = item['el'] as HTMLElement | undefined;
+				if (el?.classList?.contains('is-active')) {
+					const abstractFile = app.vault.getAbstractFileByPath(path);
+					if (abstractFile instanceof TFolder) return abstractFile;
+				}
+			}
+		}
 	}
 
-	const folder = activeFile.parent;
+	// Fallback: parent folder of the active note
+	const activeFile = app.workspace.getActiveFile();
+	return activeFile?.parent ?? null;
+}
+
+export async function insertFolderToc(app: App, maxDepth: number): Promise<void> {
+	const folder = resolveTargetFolder(app);
 	if (!folder) {
-		new Notice('Could not determine the folder for the active note.');
+		new Notice('Select a folder in the file explorer or open a note first.');
 		return;
 	}
 
