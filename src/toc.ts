@@ -1,5 +1,15 @@
-const TOC_START = '<!-- toc -->';
-const TOC_END = '<!-- /toc -->';
+export const TOC_START = '<!-- toc -->';
+export const TOC_END = '<!-- /toc -->';
+
+/** Replaces an existing toc block in content, or prepends one. */
+export function applyTocBlock(content: string, tocBlock: string): string {
+	const pattern = new RegExp(`${TOC_START}[\\s\\S]*?${TOC_END}`, 'm');
+	if (pattern.test(content)) {
+		return content.replace(pattern, tocBlock);
+	}
+	const separator = content.length > 0 ? '\n\n' : '';
+	return `${tocBlock}${separator}${content}`;
+}
 
 interface Heading {
 	level: number;

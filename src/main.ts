@@ -1,6 +1,8 @@
 import { Editor, MarkdownView, MarkdownFileInfo, Notice, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, TocGeneratorPluginSettings, TocSettingTab } from './settings';
 import { insertOrUpdateToc } from './toc';
+import { insertFolderToc } from './folder-toc';
+import { insertVaultToc } from './vault-toc';
 
 export default class TocGeneratorPlugin extends Plugin {
 	settings!: TocGeneratorPluginSettings;
@@ -32,6 +34,18 @@ export default class TocGeneratorPlugin extends Plugin {
 					editor.setValue(updated);
 				}
 			},
+		});
+
+		this.addCommand({
+			id: 'insert-folder-toc',
+			name: 'Insert folder index',
+			callback: () => insertFolderToc(this.app, this.settings.folderTocDepth),
+		});
+
+		this.addCommand({
+			id: 'insert-vault-toc',
+			name: 'Insert vault index',
+			callback: () => insertVaultToc(this.app, this.settings.vaultTocDepth),
 		});
 
 		this.addSettingTab(new TocSettingTab(this.app, this));

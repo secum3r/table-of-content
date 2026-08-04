@@ -6,11 +6,15 @@ export type TocSortOrder = 'original' | 'alphabetical';
 export interface TocGeneratorPluginSettings {
 	tocMaxDepth: number;
 	tocSortOrder: TocSortOrder;
+	folderTocDepth: number;
+	vaultTocDepth: number;
 }
 
 export const DEFAULT_SETTINGS: TocGeneratorPluginSettings = {
 	tocMaxDepth: 3,
 	tocSortOrder: 'original',
+	folderTocDepth: 2,
+	vaultTocDepth: 2,
 };
 
 export class TocSettingTab extends PluginSettingTab {
@@ -49,6 +53,36 @@ export class TocSettingTab extends PluginSettingTab {
 					.setValue(this.plugin.settings.tocSortOrder)
 					.onChange(async (value) => {
 						this.plugin.settings.tocSortOrder = value as TocSortOrder;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl).setName('Folder index').setHeading();
+
+		new Setting(containerEl)
+			.setName('Maximum subfolder depth')
+			.setDesc('How many subfolder levels deep to scan when generating a folder table of contents.')
+			.addSlider((slider) =>
+				slider
+					.setLimits(1, 6, 1)
+					.setValue(this.plugin.settings.folderTocDepth)
+					.onChange(async (value) => {
+						this.plugin.settings.folderTocDepth = value;
+						await this.plugin.saveSettings();
+					}),
+			);
+
+		new Setting(containerEl).setName('Vault index').setHeading();
+
+		new Setting(containerEl)
+			.setName('Maximum folder depth')
+			.setDesc('How many folder levels deep to include in the vault table of contents (max 2).')
+			.addSlider((slider) =>
+				slider
+					.setLimits(1, 2, 1)
+					.setValue(this.plugin.settings.vaultTocDepth)
+					.onChange(async (value) => {
+						this.plugin.settings.vaultTocDepth = value;
 						await this.plugin.saveSettings();
 					}),
 			);
