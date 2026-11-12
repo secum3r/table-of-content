@@ -1,5 +1,5 @@
 import { App, Notice, TFile, TFolder } from 'obsidian';
-import { applyTocBlock, TOC_END, TOC_START } from './toc';
+import { applyEdit, computeBlockEdit, NOTE_TOC_MARKERS, VAULT_INDEX_MARKERS, wrapBlock } from './toc';
 
 const MAIN_INDEX_FILE = '_Main-Index.md';
 
@@ -35,14 +35,7 @@ function renderVaultNodes(nodes: VaultFolderNode[], indent: number): string[] {
 
 function buildVaultTocBlock(app: App, maxDepth: number): string {
 	const root = app.vault.getRoot();
-	const nodes = scanVaultFolders(root, maxDepth, 1);
-
-	if (nodes.length === 0) {
-		return `${TOC_START}\n${TOC_END}`;
-	}
-
-	const lines = renderVaultNodes(nodes, 0);
-	return `${TOC_START}\n${lines.join('\n')}\n${TOC_END}`;
+	return wrapBlock(renderVaultNodes(scanVaultFolders(root, maxDepth, 1), 0), VAULT_INDEX_MARKERS);
 }
 
 export async function insertVaultToc(app: App, maxDepth: number): Promise<void> {
@@ -52,7 +45,9 @@ export async function insertVaultToc(app: App, maxDepth: number): Promise<void> 
 	const existing = app.vault.getAbstractFileByPath(mainIndexPath);
 	if (existing instanceof TFile) {
 		const content = await app.vault.read(existing);
-		await app.vault.modify(existing, applyTocBlock(content, tocBlock));
+		// Indexes written before 1.0.10 used the note TOC markers.
+		const edit = computeBlockEdit(content, tocBlock, VAULT_INDEX_MARKERS, NOTE_TOC_MARKERS);
+		if (edit) await app.vault.modify(existing, applyEdit(content, edit));
 	} else {
 		await app.vault.create(mainIndexPath, `${tocBlock}\n`);
 	}

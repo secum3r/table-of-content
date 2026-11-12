@@ -1,27 +1,89 @@
-export const TOC_START = '<!-- toc -->';
-export const TOC_END = '<!-- /toc -->';
+export interface BlockMarkers {
+	start: string;
+	end: string;
+}
 
-/** Replaces an existing toc block in content, or prepends one. */
-export function applyTocBlock(content: string, tocBlock: string): string {
-	const pattern = new RegExp(`${TOC_START}[\\s\\S]*?${TOC_END}`, 'm');
-	if (pattern.test(content)) {
-		return content.replace(pattern, tocBlock);
+export const NOTE_TOC_MARKERS: BlockMarkers = { start: '<!-- toc -->', end: '<!-- /toc -->' };
+export const FOLDER_INDEX_MARKERS: BlockMarkers = { start: '<!-- folder-index -->', end: '<!-- /folder-index -->' };
+export const VAULT_INDEX_MARKERS: BlockMarkers = { start: '<!-- vault-index -->', end: '<!-- /vault-index -->' };
+
+/** A replacement of content[from, to) with text. */
+export interface TextEdit {
+	from: number;
+	to: number;
+	text: string;
+}
+
+export function wrapBlock(lines: string[], markers: BlockMarkers): string {
+	return [markers.start, ...lines, markers.end].join('\n');
+}
+
+function findBlock(content: string, markers: BlockMarkers): { from: number; to: number } | null {
+	const from = content.indexOf(markers.start);
+	if (from === -1) return null;
+	const endStart = content.indexOf(markers.end, from + markers.start.length);
+	if (endStart === -1) return null;
+	return { from, to: endStart + markers.end.length };
+}
+
+/** Offset just past a leading YAML frontmatter block, or 0 if there is none. */
+function frontmatterEnd(content: string): number {
+	const match = /^---[ \t]*\r?\n(?:[\s\S]*?\r?\n)?---[ \t]*(?:\r?\n|$)/.exec(content);
+	return match ? match[0].length : 0;
+}
+
+/**
+ * Edit that puts block into content: replaces the existing block (or one written
+ * with legacyMarkers), otherwise inserts below any frontmatter. Null if unchanged.
+ */
+export function computeBlockEdit(
+	content: string,
+	block: string,
+	markers: BlockMarkers,
+	legacyMarkers?: BlockMarkers,
+): TextEdit | null {
+	const existing = findBlock(content, markers) ?? (legacyMarkers ? findBlock(content, legacyMarkers) : null);
+	if (existing) {
+		if (content.slice(existing.from, existing.to) === block) return null;
+		return { ...existing, text: block };
 	}
-	const separator = content.length > 0 ? '\n\n' : '';
-	return `${tocBlock}${separator}${content}`;
+
+	const at = frontmatterEnd(content);
+	const before = at > 0 && !content.slice(0, at).endsWith('\n') ? '\n' : '';
+	const rest = content.slice(at);
+	const after = rest.length === 0 ? '\n' : /^\r?\n/.test(rest) ? '\n' : '\n\n';
+	return { from: at, to: at, text: `${before}${block}${after}` };
+}
+
+export function applyEdit(content: string, edit: TextEdit | null): string {
+	if (!edit) return content;
+	return content.slice(0, edit.from) + edit.text + content.slice(edit.to);
 }
 
 interface Heading {
 	level: number;
+	/** Text used after the # in the link; kept as close to the source heading as link syntax allows. */
+	target: string;
+	/** Display text with Markdown formatting removed. */
 	text: string;
 }
 
-/** Strips markdown formatting characters from heading text so the link label is clean. */
 function cleanHeadingText(text: string): string {
 	return text
 		.replace(/\[\[([^\]|]+)(\|[^\]]+)?\]\]/g, '$1')
 		.replace(/\[([^\]]+)\]\([^)]+\)/g, '$1')
-		.replace(/[*_`~]/g, '')
+		.replace(/\*\*|__|~~|`/g, '')
+		// Single * or _ only counts as emphasis at a word edge, so snake_case and 2 * 3 survive.
+		.replace(/(^|\s)[*_](?=\S)/g, '$1')
+		.replace(/(\S)[*_](?=\s|$)/g, '$1')
+		.trim();
+}
+
+/** Removes only the sequences that would break a [[#target|alias]] link. */
+function headingLinkTarget(rawText: string): string {
+	return rawText
+		.replace(/\[\[|\]\]|%%|[#|^]/g, ' ')
+		.replace(/\s+/g, ' ')
 		.trim();
 }
 
@@ -29,14 +91,14 @@ export function extractHeadings(content: string, maxDepth: number): Heading[] {
 	const headings: Heading[] = [];
 	let inCodeBlock = false;
 
-	for (const line of content.split('\n')) {
+	for (const line of content.slice(frontmatterEnd(content)).split('\n')) {
 		if (/^\s*(```|~~~)/.test(line)) {
 			inCodeBlock = !inCodeBlock;
 			continue;
 		}
 		if (inCodeBlock) continue;
 
-		const match = /^(#{1,6})\s+(.+?)\s*#*$/.exec(line);
+		const match = /^(#{1,6})[ \t]+(.+?)(?:[ \t]+#+)?[ \t]*$/.exec(line);
 		if (!match) continue;
 
 		const hashes = match[1] ?? '';
@@ -44,8 +106,9 @@ export function extractHeadings(content: string, maxDepth: number): Heading[] {
 		const level = hashes.length;
 		if (level > maxDepth) continue;
 
+		const target = headingLinkTarget(rawText);
 		const text = cleanHeadingText(rawText);
-		if (text) headings.push({ level, text });
+		if (target && text) headings.push({ level, target, text });
 	}
 
 	return headings;
@@ -99,9 +162,7 @@ function flattenHeadingTree(nodes: HeadingNode[]): Heading[] {
 }
 
 export function buildToc(headings: Heading[], sortOrder: SortOrder = 'original'): string {
-	if (headings.length === 0) {
-		return `${TOC_START}\n${TOC_END}`;
-	}
+	if (headings.length === 0) return wrapBlock([], NOTE_TOC_MARKERS);
 
 	// Alphabetical sort preserves hierarchy: each level is sorted independently.
 	const sorted = sortOrder === 'alphabetical'
@@ -111,33 +172,17 @@ export function buildToc(headings: Heading[], sortOrder: SortOrder = 'original')
 	const minLevel = Math.min(...sorted.map((h) => h.level));
 	const lines = sorted.map((h) => {
 		const indent = '\t'.repeat(h.level - minLevel);
-		return `${indent}- [[#${h.text}|${h.text}]]`;
+		return `${indent}- [[#${h.target}|${h.text}]]`;
 	});
 
-	return `${TOC_START}\n${lines.join('\n')}\n${TOC_END}`;
+	return wrapBlock(lines, NOTE_TOC_MARKERS);
 }
 
-/**
- * Inserts or replaces a TOC block. If a TOC block already exists in the content
- * (delimited by TOC_START/TOC_END markers), it is replaced in place; otherwise
- * the new TOC is inserted at the very top of the note.
- */
-export function insertOrUpdateToc(content: string, maxDepth: number, sortOrder: SortOrder = 'original'): string {
-	// Headings are extracted from content with any existing TOC block removed,
-	// so the TOC never includes its own entries.
-	const withoutExisting = content.replace(
-		new RegExp(`${TOC_START}[\\s\\S]*?${TOC_END}\\n?`, 'm'),
-		'',
-	);
-
-	const headings = extractHeadings(withoutExisting, maxDepth);
-	const toc = buildToc(headings, sortOrder);
-
-	const tocBlockPattern = new RegExp(`${TOC_START}[\\s\\S]*?${TOC_END}`, 'm');
-	if (tocBlockPattern.test(content)) {
-		return content.replace(tocBlockPattern, toc);
-	}
-
-	const separator = content.length > 0 ? '\n\n' : '';
-	return `${toc}${separator}${content}`;
+/** Edit that inserts or refreshes the note's heading TOC; null if it is already up to date. */
+export function computeNoteTocEdit(content: string, maxDepth: number, sortOrder: SortOrder = 'original'): TextEdit | null {
+	// Headings are read with the existing block removed so the TOC never lists itself.
+	const existing = findBlock(content, NOTE_TOC_MARKERS);
+	const body = existing ? content.slice(0, existing.from) + content.slice(existing.to) : content;
+	const block = buildToc(extractHeadings(body, maxDepth), sortOrder);
+	return computeBlockEdit(content, block, NOTE_TOC_MARKERS);
 }

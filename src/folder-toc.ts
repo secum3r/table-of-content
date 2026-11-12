@@ -1,5 +1,5 @@
 import { App, Notice, TFile, TFolder } from 'obsidian';
-import { applyTocBlock, TOC_END, TOC_START } from './toc';
+import { applyEdit, computeBlockEdit, FOLDER_INDEX_MARKERS, NOTE_TOC_MARKERS, wrapBlock } from './toc';
 
 const INDEX_FILE = '_index.md';
 
@@ -48,12 +48,7 @@ function renderEntries(entries: Entry[], indent: number): string[] {
 }
 
 function buildFolderTocBlock(folder: TFolder, maxDepth: number): string {
-	const entries = scanFolder(folder, maxDepth, 1);
-	if (entries.length === 0) {
-		return `${TOC_START}\n${TOC_END}`;
-	}
-	const lines = renderEntries(entries, 0);
-	return `${TOC_START}\n${lines.join('\n')}\n${TOC_END}`;
+	return wrapBlock(renderEntries(scanFolder(folder, maxDepth, 1), 0), FOLDER_INDEX_MARKERS);
 }
 
 /** Returns the target folder: the folder selected in the file explorer, or
@@ -87,13 +82,15 @@ export async function insertFolderToc(app: App, maxDepth: number): Promise<void>
 		return;
 	}
 
-	const indexPath = `${folder.path}/${INDEX_FILE}`;
+	const indexPath = folder.isRoot() ? INDEX_FILE : `${folder.path}/${INDEX_FILE}`;
 	const tocBlock = buildFolderTocBlock(folder, maxDepth);
 
 	const existing = app.vault.getAbstractFileByPath(indexPath);
 	if (existing instanceof TFile) {
 		const content = await app.vault.read(existing);
-		await app.vault.modify(existing, applyTocBlock(content, tocBlock));
+		// Indexes written before 1.0.10 used the note TOC markers.
+		const edit = computeBlockEdit(content, tocBlock, FOLDER_INDEX_MARKERS, NOTE_TOC_MARKERS);
+		if (edit) await app.vault.modify(existing, applyEdit(content, edit));
 	} else {
 		await app.vault.create(indexPath, `${tocBlock}\n`);
 	}

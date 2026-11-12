@@ -1,6 +1,6 @@
 import { Editor, MarkdownView, MarkdownFileInfo, Notice, Plugin } from 'obsidian';
 import { DEFAULT_SETTINGS, TocGeneratorPluginSettings, TocSettingTab } from './settings';
-import { insertOrUpdateToc } from './toc';
+import { computeNoteTocEdit } from './toc';
 import { insertFolderToc } from './folder-toc';
 import { insertVaultToc } from './vault-toc';
 
@@ -16,23 +16,14 @@ export default class TocGeneratorPlugin extends Plugin {
 				new Notice('Open a Markdown note first.');
 				return;
 			}
-			const editor = view.editor;
-			const content = editor.getValue();
-			const updated = insertOrUpdateToc(content, this.settings.tocMaxDepth, this.settings.tocSortOrder);
-			if (updated !== content) {
-				editor.setValue(updated);
-			}
+			this.insertNoteToc(view.editor);
 		});
 
 		this.addCommand({
 			id: 'insert-toc',
 			name: 'Insert at top of note',
 			editorCallback: (editor: Editor, _ctx: MarkdownView | MarkdownFileInfo) => {
-				const content = editor.getValue();
-				const updated = insertOrUpdateToc(content, this.settings.tocMaxDepth, this.settings.tocSortOrder);
-				if (updated !== content) {
-					editor.setValue(updated);
-				}
+				this.insertNoteToc(editor);
 			},
 		});
 
@@ -52,6 +43,13 @@ export default class TocGeneratorPlugin extends Plugin {
 	}
 
 	onunload() {}
+
+	insertNoteToc(editor: Editor) {
+		const edit = computeNoteTocEdit(editor.getValue(), this.settings.tocMaxDepth, this.settings.tocSortOrder);
+		if (edit) {
+			editor.replaceRange(edit.text, editor.offsetToPos(edit.from), editor.offsetToPos(edit.to));
+		}
+	}
 
 	async loadSettings() {
 		this.settings = Object.assign(
